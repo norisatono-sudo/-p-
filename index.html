@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>うp主エピソード生成ツール</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3344;
+  --accent: #6c5ce7;
+  --accent-light: #a29bfe;
+  --text: #e4e6ef;
+  --text-dim: #8b8fa3;
+  --success: #00cec9;
+  --warn: #fdcb6e;
+  --danger: #ff7675;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Segoe UI','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #1a1d27 0%, #2d1b69 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0;
+  text-align: center;
+}
+.header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.header h1 span { color: var(--accent-light); }
+.header p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .num {
+  background: var(--accent);
+  color: #fff;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+input[type="text"], textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent);
+}
+textarea { resize: vertical; min-height: 80px; }
+.input-group { margin-bottom: 16px; }
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .input-row { grid-template-columns: 1fr; }
+}
+
+/* Reference entries */
+.ref-list { display: flex; flex-direction: column; gap: 12px; }
+.ref-entry {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+}
+.ref-entry .ref-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.ref-entry .ref-label {
+  font-size: 0.8rem;
+  color: var(--accent-light);
+  font-weight: 600;
+}
+.ref-entry .btn-remove {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.ref-entry .btn-remove:hover { background: rgba(255,118,117,0.15); }
+.ref-entry input, .ref-entry textarea {
+  margin-bottom: 8px;
+}
+.ref-entry select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+  outline: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #5b4bd5; }
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); }
+.btn-ghost {
+  background: none;
+  color: var(--accent-light);
+  border: 1px dashed var(--border);
+  width: 100%;
+  justify-content: center;
+  padding: 12px;
+}
+.btn-ghost:hover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* Results */
+#results { display: none; }
+.result-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.result-card:hover { border-color: var(--accent); }
+.result-num {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+.result-type {
+  font-size: 0.75rem;
+  color: var(--warn);
+  font-weight: 600;
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+.result-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+.result-text em {
+  color: var(--accent-light);
+  font-style: normal;
+  font-weight: 600;
+}
+.result-citation {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.result-citation a {
+  color: var(--accent-light);
+  text-decoration: none;
+}
+.result-citation a:hover { text-decoration: underline; }
+.copy-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.copy-btn:hover { color: var(--accent-light); border-color: var(--accent); }
+.copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  display: none;
+}
+.loading.active { display: block; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--success);
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Tabs for API mode */
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: none;
+  transition: all 0.2s;
+}
+.mode-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.mode-content { display: none; }
+.mode-content.active { display: block; }
+
+.api-note {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  background: rgba(108,92,231,0.1);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>うp主</span>エピソード生成ツール</h1>
+  <p>テーマとキーワードから「うp主が～」に続くリアルな体験談セリフを3つ提案</p>
+</div>
+
+<div class="container">
+  <!-- STEP 1: Theme & Keywords -->
+  <div class="section">
+    <div class="section-title"><span class="num">1</span>テーマ・キーワードを入力</div>
+    <div class="input-group">
+      <label>テーマ（動画の主題）</label>
+      <input type="text" id="theme" placeholder="例: 圏央道の渋滞ポイント、オービスの取り締まり場所">
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>キーワード（カンマ区切り）</label>
+        <input type="text" id="keywords" placeholder="例: 八王子JCT, 海老名JCT, 渋滞">
+      </div>
+      <div class="input-group">
+        <label>想定するセリフの雰囲気</label>
+        <input type="text" id="tone" placeholder="例: カジュアル、驚き、共感を誘う">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Reference Sources -->
+  <div class="section">
+    <div class="section-title"><span class="num">2</span>参考ソースを追加（SNS・ブログ等）</div>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:14px;">
+      参考にしたいSNS投稿やブログ記事のテキストとURLを貼り付けてください。出典として引用されます。
+    </p>
+    <div class="ref-list" id="refList">
+      <!-- ref entries inserted here -->
+    </div>
+    <button class="btn btn-ghost" onclick="addRefEntry()" style="margin-top:12px;">＋ ソースを追加</button>
+  </div>
+
+  <!-- STEP 3: Generation Mode -->
+  <div class="section">
+    <div class="section-title"><span class="num">3</span>生成モードを選択</div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchMode('local')">テンプレート生成（APIキー不要）</button>
+      <button class="mode-tab" onclick="switchMode('api')">AI生成（APIキー使用）</button>
+    </div>
+
+    <div class="mode-content active" id="mode-local">
+      <div class="api-note">
+        入力した参考ソースとキーワードをもとに、テンプレートベースでセリフを生成します。APIキー不要ですぐに使えます。
+      </div>
+    </div>
+
+    <div class="mode-content" id="mode-api">
+      <div class="api-note">
+        OpenAI APIまたはAnthropic APIを使用して、より自然なセリフを生成します。APIキーはブラウザ内のみで使用され、外部に送信されません（各API提供元を除く）。
+      </div>
+      <div class="input-group">
+        <label>API プロバイダー</label>
+        <select id="apiProvider" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:0.9rem;">
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>APIキー</label>
+        <input type="text" id="apiKey" placeholder="sk-... または sk-ant-...">
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Button -->
+  <div class="actions">
+    <button class="btn btn-primary" id="generateBtn" onclick="generate()">セリフを生成する</button>
+    <button class="btn btn-secondary" onclick="clearAll()">クリア</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>エピソードを生成中...</p>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="section" style="border-color:var(--accent);">
+    <div class="section-title"><span class="num">✓</span>生成結果：「うp主が～」セリフ候補</div>
+    <div id="resultCards"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+// ---- State ----
+let refCounter = 0;
+let currentMode = 'local';
+
+// ---- Reference Management ----
+function addRefEntry(sourceType, url, text) {
+  refCounter++;
+  const id = 'ref-' + refCounter;
+  const html = `
+    <div class="ref-entry" id="${id}">
+      <div class="ref-header">
+        <span class="ref-label">ソース #${refCounter}</span>
+        <button class="btn-remove" onclick="removeRef('${id}')">削除</button>
+      </div>
+      <select class="ref-type">
+        <option value="twitter" ${sourceType==='twitter'?'selected':''}>X (Twitter)</option>
+        <option value="blog" ${sourceType==='blog'?'selected':''}>ブログ記事</option>
+        <option value="youtube" ${sourceType==='youtube'?'selected':''}>YouTube コメント</option>
+        <option value="reddit" ${sourceType==='reddit'?'selected':''}>Reddit / 5ch</option>
+        <option value="other" ${sourceType==='other'?'selected':''}>その他</option>
+      </select>
+      <input type="text" class="ref-url" placeholder="URL（出典リンク）" value="${url||''}">
+      <textarea class="ref-text" rows="3" placeholder="投稿やコメントの内容をここに貼り付け">${text||''}</textarea>
+    </div>`;
+  document.getElementById('refList').insertAdjacentHTML('beforeend', html);
+}
+
+function removeRef(id) {
+  document.getElementById(id).remove();
+}
+
+function getReferences() {
+  const entries = document.querySelectorAll('.ref-entry');
+  const refs = [];
+  entries.forEach(entry => {
+    const type = entry.querySelector('.ref-type').value;
+    const url = entry.querySelector('.ref-url').value.trim();
+    const text = entry.querySelector('.ref-text').value.trim();
+    if (text) {
+      refs.push({ type, url, text });
+    }
+  });
+  return refs;
+}
+
+// ---- Mode Switching ----
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mode-content').forEach(c => c.classList.remove('active'));
+  if (mode === 'local') {
+    document.querySelectorAll('.mode-tab')[0].classList.add('active');
+    document.getElementById('mode-local').classList.add('active');
+  } else {
+    document.querySelectorAll('.mode-tab')[1].classList.add('active');
+    document.getElementById('mode-api').classList.add('active');
+  }
+}
+
+// ---- Template-based Generation ----
+function generateLocal(theme, keywords, tone, refs) {
+  const kws = keywords.split(/[,、，]/).map(k => k.trim()).filter(Boolean);
+  const patterns = [
+    {
+      type: '実体験型（自分で体験）',
+      templates: [
+        (t, kw, ref) => `うp主も実はこの${t}にはけっこう詳しくてさ、${kw[0] || 'この辺り'}は何度も${pickAction(t)}んだけど、${ref ? ref.text.substring(0, 60) + 'って話をよく聞くし、' : ''}実際マジでそうだったんだよな。`,
+        (t, kw, ref) => `うp主がこの前${kw[0] || 'ここ'}を${pickAction(t)}時の話なんだけどさ、${ref ? '「' + extractQuote(ref.text) + '」って声もあるように、' : ''}ほんとに${kw[1] || 'これ'}には参ったわ。`,
+        (t, kw, ref) => `うp主も${kw[0] || 'ここ'}はよく${pickAction(t)}んだが、${kw[1] || t}は${pickImpression(t)}印象だな。${ref ? 'ネットでも「' + extractQuote(ref.text) + '」って意見が多いし、' : ''}体感としても間違いない。`,
+      ]
+    },
+    {
+      type: '伝聞型（友人・知人から聞いた話）',
+      templates: [
+        (t, kw, ref) => `うp主がかつて聞いた話なんだが、知り合いが${kw[0] || 'この辺'}で${pickAction(t)}てたら${pickIncident(t)}らしいんだよ。${ref ? '調べてみたら「' + extractQuote(ref.text) + '」って情報もあって、' : ''}わりとあるあるみたいだな。`,
+        (t, kw, ref) => `うp主の友人に${t}に詳しいやつがいるんだけど、そいつが言うには${kw[0] || 'ここ'}は${pickWarning(t)}って話でさ。${ref ? '実際SNSでも「' + extractQuote(ref.text) + '」って書いてる人がいて、' : ''}信憑性は高いと思うぞ。`,
+        (t, kw, ref) => `うp主が前に${pickSource()}で見たんだが、${kw[0] || 'この場所'}では${pickIncident(t)}ことがあったらしい。${ref ? '元の投稿には「' + extractQuote(ref.text) + '」とあって、' : ''}これは気をつけた方がいいな。`,
+      ]
+    },
+    {
+      type: '共感・あるある型',
+      templates: [
+        (t, kw, ref) => `うp主もさ、${kw[0] || 'この件'}については視聴者のみんなと同じ気持ちだよ。${ref ? '「' + extractQuote(ref.text) + '」って意見もあったけど、' : ''}${pickAgreement(t)}ってマジで思うわ。`,
+        (t, kw, ref) => `うp主的にはこれ完全にあるあるでさ、${kw[0] || t}って${pickImpression(t)}よな？${ref ? 'ネットでも「' + extractQuote(ref.text) + '」って書かれてて、' : ''}みんな同じこと思ってるんだなって。`,
+        (t, kw, ref) => `うp主に言わせれば${kw[0] || t}は${pickWarning(t)}。${ref ? '実際「' + extractQuote(ref.text) + '」ってコメントもあったし、' : ''}これ経験した人なら分かると思うけどさ。`,
+      ]
+    }
+  ];
+
+  const results = [];
+  patterns.forEach((pattern, i) => {
+    const template = pattern.templates[Math.floor(Math.random() * pattern.templates.length)];
+    const ref = refs[i] || refs[0] || null;
+    const text = template(theme, kws, ref);
+    results.push({
+      type: pattern.type,
+      text: text,
+      citation: ref ? { type: ref.type, url: ref.url, text: ref.text } : null
+    });
+  });
+  return results;
+}
+
+function extractQuote(text) {
+  // Extract a meaningful short quote from the reference text
+  const sentences = text.split(/[。．！？\n]/).filter(s => s.trim().length > 5);
+  if (sentences.length === 0) return text.substring(0, 40);
+  const s = sentences[Math.floor(Math.random() * Math.min(sentences.length, 3))].trim();
+  return s.length > 50 ? s.substring(0, 50) + '...' : s;
+}
+
+function pickAction(theme) {
+  const driving = ['通る', '走る', '使う', '行く'];
+  const general = ['チェックする', '調べる', '見に行く', '利用する'];
+  if (/道|路|高速|IC|JCT|SA|PA|車|運転|走/.test(theme)) return driving[Math.floor(Math.random()*driving.length)];
+  return general[Math.floor(Math.random()*general.length)];
+}
+
+function pickImpression(theme) {
+  const options = ['しょっちゅう混んでる', 'ヤバい', '要注意な', 'けっこう厄介な', '油断できない', '侮れない'];
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+function pickIncident(theme) {
+  if (/取り締まり|オービス|速度|警察|ネズミ捕り/.test(theme)) {
+    const options = ['急に警察官が飛び出してきて捕まった', '覆面パトカーに追尾されてた', 'いきなり赤色灯が光った', '光電管式の取り締まりをやってた'];
+    return options[Math.floor(Math.random()*options.length)];
+  }
+  const general = ['予想外のことが起きた', 'トラブルに巻き込まれた', 'ヒヤッとする場面があった', '思わぬ事態に遭遇した'];
+  return general[Math.floor(Math.random()*general.length)];
+}
+
+function pickWarning(theme) {
+  const options = ['マジで気をつけた方がいい', '知らないと損する', '意外と知られてないけど危ない', 'ナメてるとやられる'];
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+function pickAgreement(theme) {
+  const options = ['ほんとそれな', 'これはガチ', 'わかりみが深い', 'まさにこれ'];
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+function pickSource() {
+  const options = ['Twitterで', '某掲示板で', 'ブログで', 'YouTubeのコメント欄で', 'SNSで'];
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+// ---- AI-based Generation ----
+async function generateWithAPI(theme, keywords, tone, refs) {
+  const provider = document.getElementById('apiProvider').value;
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) throw new Error('APIキーを入力してください。');
+
+  const refTexts = refs.map((r, i) => `[ソース${i+1}] (${r.type}) ${r.url ? r.url : '出典不明'}\n${r.text}`).join('\n\n');
+
+  const prompt = `あなたは動画シナリオの「うp主エピソード」を生成するアシスタントです。
+
+以下の条件で、「うp主が～」に続く実体験風のセリフを3つ提案してください。
+
+【テーマ】${theme}
+【キーワード】${keywords}
+【雰囲気】${tone || 'カジュアル'}
+
+【参考ソース】
+${refTexts || '（なし）'}
+
+【出力形式】以下のJSON配列で出力してください。markdownやコードブロックは使わず、純粋なJSONのみ出力してください。
+[
+  {
+    "type": "実体験型（自分で体験）",
+    "text": "うp主が～で始まるセリフ",
+    "citation_index": 使用したソース番号(1始まり)またはnull
+  },
+  {
+    "type": "伝聞型（友人・知人から聞いた話）",
+    "text": "うp主が～で始まるセリフ",
+    "citation_index": 使用したソース番号またはnull
+  },
+  {
+    "type": "共感・あるある型",
+    "text": "うp主が～で始まるセリフ",
+    "citation_index": 使用したソース番号またはnull
+  }
+]
+
+ルール:
+- 各セリフは自然な口語体で、ニコニコ動画やYouTubeの解説動画にふさわしいカジュアルなトーンにすること
+- 参考ソースの内容を自然に取り込み、「SNSでも～って声がある」「ネットでも～と言われている」のように引用を含めること
+- セリフの中に参考ソースからの具体的な表現や情報を盛り込むこと
+- JSONのみを出力し、他のテキストは出力しないこと`;
+
+  if (provider === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.8
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`OpenAI API Error: ${e.error?.message || res.status}`); }
+    const data = await res.json();
+    const content = data.choices[0].message.content.trim();
+    return parseAIResponse(content, refs);
+  } else {
+    // Anthropic - use direct API call
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`Anthropic API Error: ${e.error?.message || res.status}`); }
+    const data = await res.json();
+    const content = data.content[0].text.trim();
+    return parseAIResponse(content, refs);
+  }
+}
+
+function parseAIResponse(content, refs) {
+  // Strip markdown code block if present
+  let cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const arr = JSON.parse(cleaned);
+  return arr.map(item => ({
+    type: item.type,
+    text: item.text,
+    citation: item.citation_index && refs[item.citation_index - 1]
+      ? { type: refs[item.citation_index - 1].type, url: refs[item.citation_index - 1].url, text: refs[item.citation_index - 1].text }
+      : null
+  }));
+}
+
+// ---- Main Generate ----
+async function generate() {
+  const theme = document.getElementById('theme').value.trim();
+  const keywords = document.getElementById('keywords').value.trim();
+  const tone = document.getElementById('tone').value.trim();
+  const refs = getReferences();
+
+  if (!theme) { alert('テーマを入力してください。'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  const loading = document.getElementById('loading');
+  const resultsEl = document.getElementById('results');
+
+  btn.disabled = true;
+  loading.classList.add('active');
+  resultsEl.style.display = 'none';
+
+  try {
+    let results;
+    if (currentMode === 'api') {
+      results = await generateWithAPI(theme, keywords, tone, refs);
+    } else {
+      // Simulate brief delay for UX
+      await new Promise(r => setTimeout(r, 600));
+      results = generateLocal(theme, keywords, tone, refs);
+    }
+    renderResults(results);
+  } catch (err) {
+    alert('エラーが発生しました: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    loading.classList.remove('active');
+  }
+}
+
+function renderResults(results) {
+  const container = document.getElementById('resultCards');
+  container.innerHTML = '';
+
+  const sourceLabels = { twitter: 'X (Twitter)', blog: 'ブログ', youtube: 'YouTube', reddit: 'Reddit/5ch', other: 'その他' };
+
+  results.forEach((r, i) => {
+    const citationHtml = r.citation
+      ? `<div class="result-citation">
+           📌 出典: ${sourceLabels[r.citation.type] || r.citation.type}${r.citation.url ? ' — <a href="' + escHtml(r.citation.url) + '" target="_blank" rel="noopener">' + escHtml(r.citation.url) + '</a>' : '（URL未記載）'}
+           <br>引用元テキスト: 「${escHtml(r.citation.text.substring(0, 100))}${r.citation.text.length > 100 ? '...' : ''}」
+         </div>`
+      : '<div class="result-citation">※ 出典なし（オリジナル生成）</div>';
+
+    const card = `
+      <div class="result-card">
+        <span class="result-num">提案 ${i + 1}</span>
+        <button class="copy-btn" onclick="copyText(this, ${i})">コピー</button>
+        <div class="result-type">${escHtml(r.type)}</div>
+        <div class="result-text" id="result-text-${i}">${escHtml(r.text)}</div>
+        ${citationHtml}
+      </div>`;
+    container.insertAdjacentHTML('beforeend', card);
+  });
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function copyText(btn, idx) {
+  const text = document.getElementById('result-text-' + idx).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'コピー済';
+    btn.classList.add('copied');
+    showToast();
+    setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+function clearAll() {
+  document.getElementById('theme').value = '';
+  document.getElementById('keywords').value = '';
+  document.getElementById('tone').value = '';
+  document.getElementById('refList').innerHTML = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('resultCards').innerHTML = '';
+  refCounter = 0;
+}
+
+// Initialize with one empty ref entry
+addRefEntry();
+</script>
+</body>
+</html>
